@@ -1,0 +1,10 @@
+{
+  "files": {
+    "main.js": "/banzhaf-shapley-web-app/static/js/main.e041480c.js",
+    "index.html": "/banzhaf-shapley-web-app/index.html",
+    "main.e041480c.js.map": "/banzhaf-shapley-web-app/static/js/main.e041480c.js.map"
+  },
+  "entrypoints": [
+    "static/js/main.e041480c.js"
+  ]
+}
