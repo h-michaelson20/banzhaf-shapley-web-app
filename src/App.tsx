@@ -60,7 +60,7 @@ function App() {
     setMethod(event.target.value as 'shapley' | 'banzhaf');
   };
 
-  const calculateValues = () => {
+  const handleCalculateValues = () => {
     const input: GameInput = {
       k,
       quotas,
@@ -149,7 +149,7 @@ function App() {
               <Button
                 variant="contained"
                 color="primary"
-                onClick={calculateValues}
+                onClick={handleCalculateValues}
                 fullWidth
                 size="large"
               >
