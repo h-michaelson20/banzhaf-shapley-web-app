@@ -27,32 +27,83 @@ interface GameInput {
 
 function App() {
   const [k, setK] = useState<number>(1);
-  const [quotas, setQuotas] = useState<number[]>([0]);
-  const [weightVectors, setWeightVectors] = useState<WeightVector[]>([{ weights: [0] }]);
+  const [n, setN] = useState<number>(1);
+  const [quotas, setQuotas] = useState<number[]>(Array(1).fill(0));
+  const [weightVectors, setWeightVectors] = useState<WeightVector[]>(
+    Array(1)
+      .fill(null)
+      .map(() => ({ weights: Array(1).fill(0) }))
+  );
   const [method, setMethod] = useState<'shapley' | 'banzhaf'>('shapley');
   const [results, setResults] = useState<number[]>([]);
 
   const handleKChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const newK = parseInt(event.target.value) || 1;
-    setK(newK);
-    
-    // Update arrays to match new k
-    setQuotas(Array(newK).fill(0));
-    setWeightVectors(Array(newK).fill({ weights: [0] }));
+    const value = event.target.value;
+    if (value === '') {
+      setK(0);
+    } else {
+      const newK = parseInt(value, 10);
+      if (!isNaN(newK)) {
+        setK(newK);
+        // reset quotas and weight‐vectors to match new number of issues (k)
+        setQuotas(Array(newK).fill(0));
+        setWeightVectors(
+          Array(newK)
+            .fill(null)
+            .map(() => ({ weights: Array(n).fill(0) }))
+        );
+      }
+    }
   };
 
-  const handleQuotaChange = (index: number, value: number) => {
+  const handleNChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    if (value === '') {
+      setN(0);
+    } else {
+      const newN = parseInt(value, 10);
+      if (!isNaN(newN)) {
+        setN(newN);
+        // reset every issue's weight vector to new length
+        setWeightVectors(
+          Array(k)
+            .fill(null)
+            .map(() => ({ weights: Array(newN).fill(0) }))
+        );
+      }
+    }
+  };
+
+  const handleQuotaChange = (index: number, value: string) => {
     const newQuotas = [...quotas];
-    newQuotas[index] = value;
+    if (value === '') {
+      newQuotas[index] = 0;
+    } else {
+      const numValue = parseInt(value, 10);
+      if (!isNaN(numValue)) {
+        newQuotas[index] = numValue;
+      }
+    }
     setQuotas(newQuotas);
   };
 
-  const handleWeightChange = (vectorIndex: number, weightIndex: number, value: number) => {
+  const handleWeightChange = (
+    vectorIndex: number,
+    weightIndex: number,
+    value: string
+  ) => {
     const newWeightVectors = [...weightVectors];
-    if (!newWeightVectors[vectorIndex].weights[weightIndex]) {
-      newWeightVectors[vectorIndex].weights[weightIndex] = 0;
+    // copy the inner array before mutating
+    const weightsCopy = [...(newWeightVectors[vectorIndex]?.weights || [])];
+    if (value === '') {
+      weightsCopy[weightIndex] = 0;
+    } else {
+      const numValue = parseInt(value, 10);
+      if (!isNaN(numValue)) {
+        weightsCopy[weightIndex] = numValue;
+      }
     }
-    newWeightVectors[vectorIndex].weights[weightIndex] = value;
+    newWeightVectors[vectorIndex] = { weights: weightsCopy };
     setWeightVectors(newWeightVectors);
   };
 
@@ -76,28 +127,33 @@ function App() {
         <Typography variant="h4" component="h1" gutterBottom align="center">
           Vector Weighted Voting Game Calculator
         </Typography>
-        
+
         <Paper sx={{ p: 3, mb: 3 }}>
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <TextField
                 label="Number of Issues (k)"
-                type="number"
-                value={k}
+                type="text"
+                value={k === 0 ? '' : k}
                 onChange={handleKChange}
                 fullWidth
-                inputProps={{ min: 1 }}
+                inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
               />
             </Grid>
-
+            <Grid item xs={12}>
+              <TextField
+                label="Number of Players (n)"
+                type="text"
+                value={n === 0 ? '' : n}
+                onChange={handleNChange}
+                fullWidth
+                inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
+              />
+            </Grid>
             <Grid item xs={12}>
               <FormControl fullWidth>
                 <InputLabel>Method</InputLabel>
-                <Select
-                  value={method}
-                  label="Method"
-                  onChange={handleMethodChange}
-                >
+                <Select value={method} label="Method" onChange={handleMethodChange}>
                   <MenuItem value="shapley">Shapley Value</MenuItem>
                   <MenuItem value="banzhaf">Banzhaf Value</MenuItem>
                 </Select>
@@ -114,11 +170,13 @@ function App() {
                     <Grid item xs={12}>
                       <TextField
                         label={`Quota ${index + 1}`}
-                        type="number"
-                        value={quotas[index]}
-                        onChange={(e) => handleQuotaChange(index, parseInt(e.target.value) || 0)}
+                        type="text"
+                        value={quotas[index] === 0 ? '' : quotas[index]}
+                        onChange={(e) =>
+                          handleQuotaChange(index, e.target.value)
+                        }
                         fullWidth
-                        inputProps={{ min: 0 }}
+                        inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                       />
                     </Grid>
                     <Grid item xs={12}>
@@ -126,15 +184,21 @@ function App() {
                         Weight Vector
                       </Typography>
                       <Grid container spacing={1}>
-                        {weightVectors[index].weights.map((weight, wIndex) => (
+                        {weightVectors[index].weights.map((w, wIndex) => (
                           <Grid item xs={3} key={wIndex}>
                             <TextField
                               label={`Weight ${wIndex + 1}`}
-                              type="number"
-                              value={weight}
-                              onChange={(e) => handleWeightChange(index, wIndex, parseInt(e.target.value) || 0)}
+                              type="text"
+                              value={w === 0 ? '' : w}
+                              onChange={(e) =>
+                                handleWeightChange(
+                                  index,
+                                  wIndex,
+                                  e.target.value
+                                )
+                              }
                               fullWidth
-                              inputProps={{ min: 0 }}
+                              inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                             />
                           </Grid>
                         ))}
@@ -164,10 +228,10 @@ function App() {
                     Results
                   </Typography>
                   <Grid container spacing={2}>
-                    {results.map((result, index) => (
-                      <Grid item xs={12} key={index}>
+                    {results.map((res, idx) => (
+                      <Grid item xs={12} key={idx}>
                         <Typography>
-                          Player {index + 1}: {result.toFixed(4)}
+                          Player {idx + 1}: {res.toFixed(4)}
                         </Typography>
                       </Grid>
                     ))}
@@ -182,4 +246,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;

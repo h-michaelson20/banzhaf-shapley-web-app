@@ -42,6 +42,13 @@ function isWinningCoalition(
   return true;
 }
 
+// Helper function for factorial calculation
+const factorial = (num: number): number => {
+  let result = 1;
+  for (let i = 2; i <= num; i++) result *= i;
+  return result;
+};
+
 // Calculate Shapley value for a player
 function calculateShapleyValue(
   player: number,
@@ -62,12 +69,7 @@ function calculateShapleyValue(
       
       if (isWinningWith && !isWinningWithout) {
         const coalitionSize = coalition.length;
-        const factorial = (n: number) => {
-          let result = 1;
-          for (let i = 2; i <= n; i++) result *= i;
-          return result;
-        };
-        
+        // Coefficient for Shapley value: (|S|! * (n - |S| - 1)!) / n!
         shapleyValue += (factorial(coalitionSize) * factorial(n - coalitionSize - 1)) / factorial(n);
       }
     }
@@ -84,23 +86,33 @@ function calculateBanzhafValue(
 ): number {
   const n = weightVectors[0].weights.length;
   const coalitions = generateCoalitions(n);
-  let banzhafValue = 0;
+  let banzhafSwings = 0; // Count of times the player is a swing
 
   for (const coalition of coalitions) {
+    // Consider coalitions S that do not include the player
     if (!coalition.includes(player)) {
-      const coalitionWithoutPlayer = [...coalition];
-      const coalitionWithPlayer = [...coalition, player];
-      
+      const coalitionWithoutPlayer = [...coalition]; // S
+      const coalitionWithPlayer = [...coalition, player]; // S U {player}
+
       const isWinningWithout = isWinningCoalition(coalitionWithoutPlayer, quotas, weightVectors);
       const isWinningWith = isWinningCoalition(coalitionWithPlayer, quotas, weightVectors);
-      
+
+      // If S is losing and S U {player} is winning, player is a swing
       if (isWinningWith && !isWinningWithout) {
-        banzhafValue++;
+        banzhafSwings++;
       }
     }
   }
 
-  return banzhafValue;
+  // The Banzhaf power index is the number of swings divided by 2^(n-1)
+  // where n is the total number of players. 2^(n-1) is the total number of
+  // coalitions that do not include the player.
+  const totalPossibleCoalitionsWithoutPlayer = Math.pow(2, n - 1);
+  // Handle the case where n=0 or n=1 to avoid division by zero or incorrect normalization
+  if (n === 0) return 0;
+  if (n === 1) return banzhafSwings > 0 ? 1 : 0;
+
+  return banzhafSwings / totalPossibleCoalitionsWithoutPlayer;
 }
 
 export function calculateValues(
@@ -117,5 +129,13 @@ export function calculateValues(
     results.push(value);
   }
 
+  // Normalize Banzhaf results to sum to 1
+  if (method === 'banzhaf') {
+    const sum = results.reduce((a, b) => a + b, 0);
+    if (sum > 0) {  // Avoid division by zero
+      return results.map(value => value / sum);
+    }
+  }
+
   return results;
-} 
+}
