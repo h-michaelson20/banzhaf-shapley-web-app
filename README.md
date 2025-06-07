@@ -1,14 +1,3 @@
-# Vector Weighted Voting Game Calculator
-
-This web application computes Shapley and Banzhaf values for vector weighted voting games. It provides an intuitive interface for inputting game parameters and visualizing the results.
-
-## Features
-
-- Input multiple issues (k) with their respective quotas and weight vectors
-- Choose between Shapley and Banzhaf value calculations
-- Real-time computation of power indices
-- Modern, responsive user interface
-- Shareable via GitHub Pages
 
 ## Setup
 
